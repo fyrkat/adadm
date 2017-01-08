@@ -76,14 +76,42 @@ class LdapConnection {
 		foreach($options['ldap_options'] as $key => $value) {
 			ldap_set_option( $this->ldap, $key, $value );
 		}
-		$bind = ldap_bind( $this->ldap, $username, $password );
+		$bind = ldap_bind( $this->ldap, $userdn, $password );
 
 		if ( !$bind ) {
-			if (ldap_get_option($this->ldap, 0x0032, $extendedError)) {
+			if (ldap_get_option( $this->ldap, 0x0032, $extendedError )) {
 				throw new \Exception( $extendedError );
 			}
 			throw \Exception( 'Unable to bind LDAP server, invalid credentials?' );
 		}
+	}
+
+	/**
+	 * Get an LDAP object by its distinguished name.
+	 * The object must already exist in LDAP.
+	 *
+	 * @param string $dn Distinguished name of the object.
+	 *
+	 * @return LdapObject The object.
+	 */
+	public function getObjectByDN(string $dn): LdapObject {
+		return $this->getObjectByAttribute('dn', $dn);
+	}
+
+	/**
+	 * Get an LDAP object by an attribute.
+	 * When the attribute is not unique, the first one is returned.
+	 *
+	 * @param string $attribute attribute name
+	 * @param mixed $value value for the attribute
+	 * @param string $basedn base dn for searching
+	 *
+	 * @return LdapObject The object.
+	 */
+	public function getObjectByAttribute(string $attribute, $value, $basedn = null): LdapObject {
+		$search = ldap_list( $this->ldap, $dn, ldap_escape( $attribute ) . '=' . ldap_escape( $value ) );
+		$entry = ldap_first_entry( $this->ldap, $search );
+		return new LdapObject( $this, $entry );
 	}
 
 }
