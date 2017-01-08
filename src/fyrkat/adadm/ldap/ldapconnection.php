@@ -24,6 +24,8 @@ class LdapConnection {
 
 	/** @var string user-provided hostname */
 	private $host;
+	/** @var string user-provided base DN */
+	private $basedn;
 	/** @var string user-provided user DN */
 	private $userdn;
 	/** @var array various options */
@@ -50,9 +52,10 @@ class LdapConnection {
 	 * @param string $host LDAP hostname
 	 * @param string $userdn LDAP user DN
 	 * @param string $password LDAP password
+	 * @param string $basedn Base DN, used as default
 	 * @param array $options LDAP options
 	 */
-	public function __construct(string $host, string $userdn, string $password, array $options = []) {
+	public function __construct(string $host, string $userdn, string $password, string $basedn = null, array $options = []) {
 		$options['protocol'] = $options['protocol'] ?? 'ldap';
 		$options['port'] = $options['port'] ?? (
 				$options['protocol'] === 'ldaps' ? 636 : 389
@@ -64,6 +67,7 @@ class LdapConnection {
 		$url = $options['protocol'] . '://' . $host;
 
 		$this->host = $host;
+		$this->basedn = $basedn;
 		$this->userdn = $userdn;
 		$this->options = $options;
 		$this->url = $url;
@@ -112,7 +116,10 @@ class LdapConnection {
 	 *
 	 * @return LdapObject The object.
 	 */
-	public function getObjectByAttribute(string $attribute, $value, $basedn = null): LdapObject {
+	public function getObjectByAttribute(string $attribute, $value, string $basedn = null): LdapObject {
+		if ( is_null( $basedn ) ) {
+			$basedn = $this->basedn;
+		}
 		$search = ldap_search( $this->ldap, $basedn, '(' . $attribute . '=' . ldap_escape($value) . ')' );
 		$entry = ldap_first_entry( $this->ldap, $search );
 		return new LdapObject( $this->ldap, $entry );
