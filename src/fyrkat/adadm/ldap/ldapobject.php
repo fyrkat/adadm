@@ -30,10 +30,16 @@ class LdapObject {
 	 * Construct new object.
 	 * This is called from LdapConnection
 	 *
-	 * @param LdapConnection $ldap Calling LdapConnection
+	 * @param resource $ldap Calling LdapConnection
 	 * @param resource $entry LDAP result entry
 	 */
 	protected function __construct(LdapConnection $ldap, resource $entry) {
+		if ( !is_resource( $ldap ) ) {
+			throw new \Exception( '$ldap must be a resource.' );
+		}
+		if ( !is_resource( $entry ) ) {
+			throw new \Exception( '$entry must be a resource.' );
+		}
 		$this->ldap = $ldap;
 		$this->entry = $entry;
 	}

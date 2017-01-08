@@ -67,10 +67,14 @@ class LdapConnection {
 		$this->userdn = $userdn;
 		$this->options = $options;
 		$this->url = $url;
-		$this->ldap = ldap_connect( $url, $port );
+		$this->ldap = ldap_connect( $url, $options['port'] );
 
-		if ( !$ldap ) {
+		if ( !$this->ldap ) {
 			throw new \Exception('Unable to connect to LDAP server.');
+		}
+
+		if ( $options['starttls'] ) {
+			ldap_start_tls( $this->ldap );
 		}
 
 		foreach($options['ldap_options'] as $key => $value) {
@@ -109,9 +113,9 @@ class LdapConnection {
 	 * @return LdapObject The object.
 	 */
 	public function getObjectByAttribute(string $attribute, $value, $basedn = null): LdapObject {
-		$search = ldap_list( $this->ldap, $dn, ldap_escape( $attribute ) . '=' . ldap_escape( $value ) );
+		$search = ldap_search( $this->ldap, $basedn, '(' . $attribute . '=' . ldap_escape($value) . ')' );
 		$entry = ldap_first_entry( $this->ldap, $search );
-		return new LdapObject( $this, $entry );
+		return new LdapObject( $this->ldap, $entry );
 	}
 
 }
