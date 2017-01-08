@@ -24,14 +24,14 @@ class LdapConnection {
 
 	/** @var string user-provided hostname */
 	private $host;
-	/** @var string user-provided username */
-	private $username;
+	/** @var string user-provided user DN */
+	private $userdn;
 	/** @var array various options */
 	private $options;
 	/** @var string calculated LDAP url for use in ldap_connect */
 	private $url;
 	/** @var resource LDAP resource */
-	private $ldap;
+	protected $ldap;
 
 	/**
 	 * Connect to LDAP and authenticate.
@@ -39,29 +39,32 @@ class LdapConnection {
 	 * an exception is returned.
 	 *
 	 * The following options are available:
-	 * - protocol (`ldaps` or `ldap`, default `ldaps`)
-	 * - port (portnumber, default 636 if protocol is `ldaps`, 389 otherwise)
-	 * - ldap_options (options like ldap_set_option, default protocol version is set to 3)
+	 * - protocol: `ldaps` or `ldap` (default `ldap`)
+	 * - port: portnumber (default 636 if protocol is `ldaps`, 389 otherwise)
+	 * - ldap_options: options like in `ldap_set_option` (default protocol version is set to 3)
+	 * - starttls: whether starttls should be used (default true)
 	 *
 	 * @see https://php.net/ldap_set_option
+	 * @see https://php.net/ldap_start_tls
 	 *
 	 * @param string $host LDAP hostname
-	 * @param string $username LDAP username (DN)
+	 * @param string $userdn LDAP user DN
 	 * @param string $password LDAP password
 	 * @param array $options LDAP options
 	 */
-	public function __construct(string $host, string $username, string $password, array $options) {
-		$options['protocol'] = $options['protocol'] ?? 'ldaps';
+	public function __construct(string $host, string $userdn, string $password, array $options = []) {
+		$options['protocol'] = $options['protocol'] ?? 'ldap';
 		$options['port'] = $options['port'] ?? (
 				$options['protocol'] === 'ldaps' ? 636 : 389
 			);
 		$options['ldap_options'] = $options['ldap_options'] ?? [];
 		$options['ldap_options'][LDAP_OPT_PROTOCOL_VERSION] = $options['ldap_options'][LDAP_OPT_PROTOCOL_VERSION] ?? 3;
+		$options['starttls'] = $options['starttls'] ?? true;
 
 		$url = $options['protocol'] . '://' . $host;
 
 		$this->host = $host;
-		$this->username = $username;
+		$this->userdn = $userdn;
 		$this->options = $options;
 		$this->url = $url;
 		$this->ldap = ldap_connect( $url, $port );
