@@ -33,7 +33,7 @@ class LdapObject {
 	 * @param resource $ldap Calling LdapConnection
 	 * @param resource $entry LDAP result entry
 	 */
-	protected function __construct(LdapConnection $ldap, resource $entry) {
+	public function __construct($ldap, $entry) {
 		if ( !is_resource( $ldap ) ) {
 			throw new \Exception( '$ldap must be a resource.' );
 		}
@@ -53,7 +53,7 @@ class LdapObject {
 		if ( isset( $this->dn ) ) {
 			return $this->dn;
 		}
-		return $this->dn = ldap_get_dn( $this->ldap->ldap, $this->entry );
+		return $this->dn = ldap_get_dn( $this->ldap, $this->entry );
 	}
 
 	/**
@@ -65,7 +65,7 @@ class LdapObject {
 	 */
 	public function getAttribute(string $attribute) {
 		if ( !isset( $this->attributes ) ) {
-			$this->attributes = ldap_get_attributes( $this->ldap->ldap, $this->entry );
+			$this->attributes = ldap_get_attributes( $this->ldap, $this->entry );
 		}
 		return array_filter(
 				$this->attributes[$attribute],
