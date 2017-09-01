@@ -107,6 +107,26 @@ class LdapConnection {
 	}
 
 	/**
+	 * Get multiple LDAP objects by the value of one attribute.
+	 *
+	 * @param string $attribute attribute name
+	 * @param mixed $value value for the attribute
+	 * @param string $basedn base dn for searching
+	 *
+	 * @return LdapObject[] The object.
+	 */
+	public function getObjectsByAttribute(string $attribute, $value, string $basedn = null): array {
+		if ( is_null( $basedn ) ) {
+			$basedn = $this->basedn;
+		}
+		$search = ldap_search( $this->ldap, $basedn, "($attribute=" . ldap_escape($value) . ')' );
+		$entries = ldap_get_entries( $this->ldap, $search );
+		unset( $entries['count'] );
+		return array_map( function( $entry ) {
+			return new LdapObject( $this, $entry );
+		}, $entries );	}
+
+	/**
 	 * Get a single LDAP object by the value of one attribute.
 	 * When the attribute's value is not unique, the first one found is returned.
 	 *
@@ -117,11 +137,7 @@ class LdapConnection {
 	 * @return LdapObject The object.
 	 */
 	public function getObjectByAttribute(string $attribute, $value, string $basedn = null): LdapObject {
-		if ( is_null( $basedn ) ) {
-			$basedn = $this->basedn;
-		}
-		$search = ldap_read( $this->ldap, $basedn, "($attribute=" . ldap_escape($value) . ')', [], 0, 1 );
-		return new LdapObject( $this, ldap_first_entry( $this->ldap, $search ) );
+		return $this->getObjectsByAttribute($attribute, $value, $basedn)[0];
 	}
 
 	/**
