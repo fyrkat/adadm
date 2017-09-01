@@ -103,7 +103,7 @@ class LdapConnection {
 	 * @return LdapObject The object.
 	 */
 	public function getObjectByDN(string $dn): LdapObject {
-		return $this->getObjectByAttribute('dn', $dn);
+		return $this->getObjectByAttribute('dn', $dn, '');
 	}
 
 	/**
