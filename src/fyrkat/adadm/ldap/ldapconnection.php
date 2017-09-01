@@ -87,7 +87,7 @@ class LdapConnection {
 		$bind = ldap_bind( $this->ldap, $userdn, $password );
 
 		if ( !$bind ) {
-			if (ldap_get_option( $this->ldap, 0x0032, $extendedError )) {
+			if (ldap_get_option( $this->ldap, LDAP_OPT_ERROR_STRING, $extendedError )) {
 				throw new \Exception( $extendedError );
 			}
 			throw \Exception( 'Unable to bind LDAP server, invalid credentials?' );
