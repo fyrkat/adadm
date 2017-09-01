@@ -25,6 +25,10 @@ class LdapObject {
 	private $dn;
 	/** @var array Lazy loaded attributes */
 	private $attributes;
+	/** @var array List of attributes that were touched */
+	private $attributeLog;
+	/** @var bool This object is new, used to create new LDAP objects */
+	private $new;
 
 	/**
 	 * Construct new object.
@@ -59,6 +63,30 @@ class LdapObject {
 	}
 
 	/**
+	 * Indicates that this object is new.
+	 * This means that it represents an LDAP object that has not been written
+	 * to the LDAP server yet.
+	 *
+	 * @return bool This object is new
+	 */
+	public function isNew(): bool {
+		return $this->new;
+	}
+	/**
+	 * Indicate that this object is new, or no longer new.
+	 * Typically you'd set this to false after the object has been written,
+	 * otherwise subsequent calls to a save function might fail,
+	 * since the object already exists.
+	 *
+	 * It doesn't make sense to set new to true at this point.
+	 *
+	 * @param bool $new This object is new
+	 */
+	public function setNew(bool $new) {
+		$this->new = $new;
+	}
+
+	/**
 	 * Return all values for the given attribute.
 	 *
 	 * @param string $attribute Name of the attribute
@@ -68,7 +96,83 @@ class LdapObject {
 	public function getAttribute(string $attribute): array {
 		// PHP LDAP library converts all array keys to lowercase.
 		return $this->attributes[strtolower( $attribute )];
+	}
+
+	/**
+	 * Get all attributes that have been changed during the lifetime of this object.
+	 * This is useful for writing all changes to LDAP.
+	 *
+	 * @return array Indexed array containing all attributes that were changed
+	 *
+	 * @see #setAttribute(string,array)
+	 * @see #pushAttribute(string,string)
+	 * @see #shiftAttribute(string,string)
+	 * @see #removeAttribute(string,string)
+	 */
+	public function getChangedAttributes(): array {
+		return array_map( function($a){
+			return $this->attributes[$a];
+		}, $this->attributeLog );
+	}
+
+	/**
+	 * Set the values of an attribute.
+	 * This will overwrite anything that was in the attribute before.
+	 *
+	 * @param string $attribute The name of the attribute
+	 * @param array $values New values for this attribute
+	 */
+	public function setAttribute(string $attribute, array $values) {
+		$this->attributeLog[$attribute] = $attribute;
+		$this->attributes[$attribute] = $values;
+	}
+
+	/**
+	 * Append a value to an attribute, like $attribute[] = $value.
+	 * Any existing values are not touched, but if the value
+	 * already existed, it will be duplicated.  There is no duplicate
+	 * detection.
+	 *
+	 * @param string $attribute The name of the attribute
+	 * @param string $value New value to append to the attribute
+	 */
+	public function pushAttribute(string $attribute, string $value) {
+		$this->attributeLog[$attribute] = $attribute;
+		$this->attributes[$attribute][] = $value;
+	}
+
+	/**
+	 * Remove a value to an attribute, the opposite of pushAttribute().
+	 * Only the vaule that exactly matches $value is removed.
+	 * If the value is duplicate, only one is removed.
+	 *
+	 * Doesn't do anything if the value wasn't there to begin with.
+	 *
+	 * @param string $attribute The name of the attribute
+	 * @param string $value New value to append to the attribute
+	 *
+	 * @return bool The value was found and removed
+	 */
+	public function shiftAttribute(string $attribute, string $value): bool {
+		$this->attributeLog[$attribute] = $attribute;
+		$found = false;
+		$this->attributes[$attribute] = array_filter(
+				$this->getAttribute( $attribute ),
+				function($v) use ($value, $found) {
+					return $found || $v !== $value;
+				}
 			);
+		return $found;
+	}
+
+	/**
+	 * Entirely remove the attribute.
+	 * This removes all values that were set before.
+	 *
+	 * @param string $attribute The name of the attribute
+	 */
+	public function removeAttribute(string $attribute) {
+		$this->setAttribute($attribute, []);
 	}
 
 }

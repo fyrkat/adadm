@@ -124,4 +124,64 @@ class LdapConnection {
 		return new LdapObject( $this, ldap_first_entry( $this->ldap, $search ) );
 	}
 
+	/**
+	 * Create a new object.  The new object will be marked as "new",
+	 * so that it is created in the LDAP server when save() is called.
+	 *
+	 * @param string $dn Distinguished name of the object.
+	 * @param array $attributes Preload the created object with these attributes
+	 * @param bool $noCheck Do not check if the object already exists in the LDAP server
+	 *
+	 * @return LdapObject New LDAP object.
+	 */
+	public function createObjectByDN(string $dn, $attributes = [], $noCheck = false): LdapObject {
+		if ( !$noCheck && $this->getObjectByDN( $dn ) ) {
+			throw new \DomainException( 'DN already exists' );
+		}
+		$o = new LdapObject( $this, ['distinguishedname' => $dn], true );
+		foreach($attributes as $key => $value) {
+			$o->setAttribute($key, is_string($value) ? [$value] : $value);
+		}
+		return $o;
+	}
+
+	/**
+	 * Write a modified LdapObject back to the server.
+	 *
+	 * @param LdapObject $o The LDAP object to write back.
+	 */
+	public function save(LdapObject $o) {
+		if ( $o->isNew() ) {
+			$this->saveNew($o);
+		} else {
+			$this->saveReplace($o);
+		}
+	}
+
+	/**
+	 * Write a modified LdapObject back to the server.
+	 * This function uses the replace strategy, which means that it will
+	 * simply overwrite all attributes that have been changed.
+	 *
+	 * @param LdapObject $o The LDAP object to write back.
+	 */
+	private function saveReplace(LdapObject $o) {
+		$dn = $o->getDN();
+		ldap_modify( $this->ldap, $dn, $o->getChangedAttributes() );
+	}
+
+	/**
+	 * Write a modified LdapObject back to the server.
+	 * This function uses the new strategy, which means that it will
+	 * attempt to write the object as a new object.
+	 * This will probably fail if the object already exists.
+	 *
+	 * @param LdapObject $o The LDAP object to write.
+	 */
+	private function saveNew(LdapObject $o) {
+		$dn = $this->getDN();
+		ldap_add( $this->ldap, $dn, $o->getChangedAttributes() );
+		$o->setNew(false);
+	}
+
 }
