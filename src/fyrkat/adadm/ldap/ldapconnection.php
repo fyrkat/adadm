@@ -107,8 +107,8 @@ class LdapConnection {
 	}
 
 	/**
-	 * Get an LDAP object by an attribute.
-	 * When the attribute is not unique, the first one is returned.
+	 * Get a single LDAP object by the value of one attribute.
+	 * When the attribute's value is not unique, the first one found is returned.
 	 *
 	 * @param string $attribute attribute name
 	 * @param mixed $value value for the attribute
@@ -120,9 +120,8 @@ class LdapConnection {
 		if ( is_null( $basedn ) ) {
 			$basedn = $this->basedn;
 		}
-		$search = ldap_search( $this->ldap, $basedn, '(' . $attribute . '=' . ldap_escape($value) . ')' );
-		$entry = ldap_first_entry( $this->ldap, $search );
-		return new LdapObject( $this->ldap, $entry );
+		$search = ldap_read( $this->ldap, $basedn, "($attribute=" . ldap_escape($value) . ')', [], 0, 1 );
+		return new LdapObject( $this, ldap_first_entry( $this->ldap, $search ) );
 	}
 
 }

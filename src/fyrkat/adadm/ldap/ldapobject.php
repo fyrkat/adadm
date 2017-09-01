@@ -19,7 +19,7 @@ class LdapObject {
 
 	/** @var LdapConnection Calling LdapConnection */
 	private $ldap;
-	/** @var resource LDAP result entry */
+	/** @var array LDAP attributes */
 	private $entry;
 	/** @var string Lazy loaded distinguished name */
 	private $dn;
@@ -30,18 +30,23 @@ class LdapObject {
 	 * Construct new object.
 	 * This is called from LdapConnection
 	 *
-	 * @param resource $ldap Calling LdapConnection
-	 * @param resource $entry LDAP result entry
+	 * @param LdapConnection $ldap Calling LdapConnection
+	 * @param array $entry Attributes in this object
+	 * @param bool $new Assume that this object is new, don't try to update it
 	 */
-	public function __construct($ldap, $entry) {
-		if ( !is_resource( $ldap ) ) {
-			throw new \Exception( '$ldap must be a resource.' );
-		}
-		if ( !is_resource( $entry ) ) {
-			throw new \Exception( '$entry must be a resource.' );
-		}
+	public function __construct(LdapConnection $ldap, array $entry, bool $new = false) {
 		$this->ldap = $ldap;
 		$this->entry = $entry;
+		$this->new = $new;
+		$this->dn = $entry['dn'];
+		$this->attributes = array_map( function($e){
+				// array_slice to remove the first "count" object.
+				return array_slice($e, 1);
+			}, array_filter( $entry, function($k){
+				// array is contaminated with integers, a "count" and "dn" field;
+				// these are not proper ldap attributes.
+				return !in_array($k, ['count', 'dn']) && is_string($k);
+			}, ARRAY_FILTER_USE_KEY ) );
 	}
 
 	/**
@@ -50,10 +55,7 @@ class LdapObject {
 	 * @return string Distinguished name
 	 */
 	public function getDN(): string {
-		if ( isset( $this->dn ) ) {
-			return $this->dn;
-		}
-		return $this->dn = ldap_get_dn( $this->ldap, $this->entry );
+		return $this->dn;
 	}
 
 	/**
@@ -63,14 +65,9 @@ class LdapObject {
 	 *
 	 * @return array All values for the requested attribute
 	 */
-	public function getAttribute(string $attribute) {
-		if ( !isset( $this->attributes ) ) {
-			$this->attributes = ldap_get_attributes( $this->ldap, $this->entry );
-		}
-		return array_filter(
-				$this->attributes[$attribute],
-				function($k){return $k !== 'count';},
-				ARRAY_FILTER_USE_KEY
+	public function getAttribute(string $attribute): array {
+		// PHP LDAP library converts all array keys to lowercase.
+		return $this->attributes[strtolower( $attribute )];
 			);
 	}
 
