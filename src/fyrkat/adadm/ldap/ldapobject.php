@@ -170,6 +170,18 @@ class LdapObject {
 	}
 
 	/**
+	 * Compare the value of an attribute server-side.
+	 *
+	 * @param string $attribute The name of the attribute
+	 * @param string $value The value of the attribute
+	 *
+	 * @param bool The attribute with the given name matches the given value
+	 */
+	public function compareAttribute( string $attribute, string $value ) {
+		return $this->ldap->compareAttribute( $this, $attribute, $value );
+	}
+
+	/**
 	 * Write the local modifications back to the server.
 	 *
 	 * This function will simply call LdapConnection::save() but it may be

@@ -216,4 +216,22 @@ class LdapConnection {
 		$o->setNew( false );
 	}
 
+	/**
+	 * Compare the value of an attribute server-side.
+	 *
+	 * @param LdapObject $o The LDAP object to compare
+	 * @param string $attribute The name of the attribute
+	 * @param string $value The value of the attribute
+	 *
+	 * @param bool The attribute with the given name matches the given value
+	 */
+	public function compareAttribute( LdapObject $o, string $attribute,
+			string $value ): bool {
+		$result = ldap_compare( $this->ldap, $o->getDN(), $attribute, $value);
+		if ( $result === -1 ) {
+			throw new LdapException( $this->ldap );
+		}
+		return $result;
+	}
+
 }
