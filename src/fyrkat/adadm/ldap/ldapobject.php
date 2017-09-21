@@ -74,19 +74,6 @@ class LdapObject {
 	public function isNew(): bool {
 		return $this->new;
 	}
-	/**
-	 * Indicate that this object is new, or no longer new.
-	 * Typically you'd set this to false after the object has been written,
-	 * otherwise subsequent calls to a save function might fail,
-	 * since the object already exists.
-	 *
-	 * It doesn't make sense to set new to true at this point.
-	 *
-	 * @param bool $new This object is new
-	 */
-	public function setNew( bool $new ) {
-		$this->new = $new;
-	}
 
 	/**
 	 * Return all values for the given attribute.
@@ -189,9 +176,15 @@ class LdapObject {
 	 * preferred to use this function, because it will ensure that the
 	 * connection that read this object and the connection that wrote the
 	 * object are the same.
+	 *
+	 * If the object is new, it will be written as a new object, and the
+	 * object will no longer be marked as new.
+	 *
+	 * @see #isNew()
 	 */
 	public function save() {
 		$this->ldap->save( $this );
+		$this->new = false;
 	}
 
 }
