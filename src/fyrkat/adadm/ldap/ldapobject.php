@@ -123,8 +123,8 @@ class LdapObject {
 	 * @param array $values New values for this attribute
 	 */
 	public function setAttribute( string $attribute, array $values ) {
-		$this->attributeLog[$attribute] = $attribute;
-		$this->attributes[$attribute] = $values;
+		$this->attributeLog[strtolower( $attribute )] = strtolower( $attribute );
+		$this->attributes[strtolower( $attribute )] = $values;
 	}
 
 	/**
@@ -137,8 +137,8 @@ class LdapObject {
 	 * @param string $value New value to append to the attribute
 	 */
 	public function pushAttribute( string $attribute, string $value ) {
-		$this->attributeLog[$attribute] = $attribute;
-		$this->attributes[$attribute][] = $value;
+		$this->attributeLog[strtolower( $attribute )] = strtolower( $attribute );
+		$this->attributes[strtolower( $attribute )][] = $value;
 	}
 
 	/**
@@ -154,9 +154,9 @@ class LdapObject {
 	 * @return bool The value was found and removed
 	 */
 	public function shiftAttribute( string $attribute, string $value ): bool {
-		$this->attributeLog[$attribute] = $attribute;
+		$this->attributeLog[strtolower( $attribute )] = $attribute;
 		$found = false;
-		$this->attributes[$attribute] = array_filter(
+		$this->attributes[strtolower( $attribute )] = array_filter(
 				$this->getAttribute( $attribute ),
 				function( $v ) use ( $value, &$found ) {
 					return $found || $v !== $value;
