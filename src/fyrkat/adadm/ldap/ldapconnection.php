@@ -71,14 +71,15 @@ class LdapConnection {
 		$this->userdn = $userdn;
 		$this->options = $options;
 		$this->url = $url;
-		$this->ldap = ldap_connect( $url, $options['port'] );
 
-		if ( !$this->ldap ) {
-			throw new \Exception( 'Unable to connect to LDAP server.' );
+		if ( false === $this->ldap = @ldap_connect( $url, $options['port'] ) ) {
+			throw new LdapConnectSyntaxException( "$url:$options[port]" );
 		}
 
 		if ( $options['starttls'] ) {
-			ldap_start_tls( $this->ldap );
+			if ( false === @ldap_start_tls( $this->ldap ) ) {
+				throw new LdapException( $this->ldap );
+			}
 		}
 
 		foreach( $options['ldap_options'] as $key => $value ) {
@@ -87,10 +88,7 @@ class LdapConnection {
 		$bind = ldap_bind( $this->ldap, $userdn, $password );
 
 		if ( !$bind ) {
-			if ( ldap_get_option( $this->ldap, LDAP_OPT_ERROR_STRING, $extendedError ) ) {
-				throw new \Exception( $extendedError );
-			}
-			throw \Exception( 'Unable to bind LDAP server, invalid credentials?' );
+			throw new LdapException( $this->ldap );
 		}
 	}
 
@@ -186,7 +184,9 @@ class LdapConnection {
 	 */
 	private function saveReplace( LdapObject $o ) {
 		$dn = $o->getDN();
-		ldap_modify( $this->ldap, $dn, $o->getChangedAttributes() );
+		if ( false === ldap_modify( $this->ldap, $dn, $o->getChangedAttributes() ) ) {
+			throw new LdapException( $this->ldap );
+		}
 	}
 
 	/**
@@ -199,7 +199,9 @@ class LdapConnection {
 	 */
 	private function saveNew( LdapObject $o ) {
 		$dn = $o->getDN();
-		ldap_add( $this->ldap, $dn, $o->getChangedAttributes() );
+		if ( false === ldap_add( $this->ldap, $dn, $o->getChangedAttributes() ) ) {
+			throw new LdapException( $this->ldap );
+		}
 		$o->setNew( false );
 	}
 
