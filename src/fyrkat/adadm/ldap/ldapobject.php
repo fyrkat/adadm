@@ -38,18 +38,18 @@ class LdapObject {
 	 * @param array $entry Attributes in this object
 	 * @param bool $new Assume that this object is new, don't try to update it
 	 */
-	public function __construct(LdapConnection $ldap, array $entry, bool $new = false) {
+	public function __construct( LdapConnection $ldap, array $entry, bool $new = false ) {
 		$this->ldap = $ldap;
 		$this->entry = $entry;
 		$this->new = $new;
 		$this->dn = $entry['dn'];
-		$this->attributes = array_map( function($e){
+		$this->attributes = array_map( function( $e ) {
 				// array_slice to remove the first "count" object.
-				return array_slice($e, 1);
-			}, array_filter( $entry, function($k){
+				return array_slice( $e, 1 );
+			}, array_filter( $entry, function( $k ) {
 				// array is contaminated with integers, a "count" and "dn" field;
 				// these are not proper ldap attributes.
-				return !in_array($k, ['count', 'dn']) && is_string($k);
+				return !in_array( $k, ['count', 'dn'] ) && is_string( $k );
 			}, ARRAY_FILTER_USE_KEY ) );
 	}
 
@@ -82,7 +82,7 @@ class LdapObject {
 	 *
 	 * @param bool $new This object is new
 	 */
-	public function setNew(bool $new) {
+	public function setNew( bool $new ) {
 		$this->new = $new;
 	}
 
@@ -93,7 +93,7 @@ class LdapObject {
 	 *
 	 * @return array All values for the requested attribute
 	 */
-	public function getAttribute(string $attribute): array {
+	public function getAttribute( string $attribute ): array {
 		// PHP LDAP library converts all array keys to lowercase.
 		return $this->attributes[strtolower( $attribute )];
 	}
@@ -110,7 +110,7 @@ class LdapObject {
 	 * @see #removeAttribute(string,string)
 	 */
 	public function getChangedAttributes(): array {
-		return array_map( function($a){
+		return array_map( function( $a ) {
 			return $this->attributes[$a];
 		}, $this->attributeLog );
 	}
@@ -122,7 +122,7 @@ class LdapObject {
 	 * @param string $attribute The name of the attribute
 	 * @param array $values New values for this attribute
 	 */
-	public function setAttribute(string $attribute, array $values) {
+	public function setAttribute( string $attribute, array $values ) {
 		$this->attributeLog[$attribute] = $attribute;
 		$this->attributes[$attribute] = $values;
 	}
@@ -136,7 +136,7 @@ class LdapObject {
 	 * @param string $attribute The name of the attribute
 	 * @param string $value New value to append to the attribute
 	 */
-	public function pushAttribute(string $attribute, string $value) {
+	public function pushAttribute( string $attribute, string $value ) {
 		$this->attributeLog[$attribute] = $attribute;
 		$this->attributes[$attribute][] = $value;
 	}
@@ -153,12 +153,12 @@ class LdapObject {
 	 *
 	 * @return bool The value was found and removed
 	 */
-	public function shiftAttribute(string $attribute, string $value): bool {
+	public function shiftAttribute( string $attribute, string $value ): bool {
 		$this->attributeLog[$attribute] = $attribute;
 		$found = false;
 		$this->attributes[$attribute] = array_filter(
 				$this->getAttribute( $attribute ),
-				function($v) use ($value, $found) {
+				function( $v ) use ( $value, &$found ) {
 					return $found || $v !== $value;
 				}
 			);
@@ -171,8 +171,8 @@ class LdapObject {
 	 *
 	 * @param string $attribute The name of the attribute
 	 */
-	public function removeAttribute(string $attribute) {
-		$this->setAttribute($attribute, []);
+	public function removeAttribute( string $attribute ) {
+		$this->setAttribute( $attribute, [] );
 	}
 
 }

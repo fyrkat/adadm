@@ -55,7 +55,7 @@ class LdapConnection {
 	 * @param string $basedn Base DN, used as default
 	 * @param array $options LDAP options
 	 */
-	public function __construct(string $host, string $userdn, string $password, string $basedn = null, array $options = []) {
+	public function __construct( string $host, string $userdn, string $password, string $basedn = null, array $options = [] ) {
 		$options['protocol'] = $options['protocol'] ?? 'ldap';
 		$options['port'] = $options['port'] ?? (
 				$options['protocol'] === 'ldaps' ? 636 : 389
@@ -74,20 +74,20 @@ class LdapConnection {
 		$this->ldap = ldap_connect( $url, $options['port'] );
 
 		if ( !$this->ldap ) {
-			throw new \Exception('Unable to connect to LDAP server.');
+			throw new \Exception( 'Unable to connect to LDAP server.' );
 		}
 
 		if ( $options['starttls'] ) {
 			ldap_start_tls( $this->ldap );
 		}
 
-		foreach($options['ldap_options'] as $key => $value) {
+		foreach( $options['ldap_options'] as $key => $value ) {
 			ldap_set_option( $this->ldap, $key, $value );
 		}
 		$bind = ldap_bind( $this->ldap, $userdn, $password );
 
 		if ( !$bind ) {
-			if (ldap_get_option( $this->ldap, LDAP_OPT_ERROR_STRING, $extendedError )) {
+			if ( ldap_get_option( $this->ldap, LDAP_OPT_ERROR_STRING, $extendedError ) ) {
 				throw new \Exception( $extendedError );
 			}
 			throw \Exception( 'Unable to bind LDAP server, invalid credentials?' );
@@ -102,8 +102,8 @@ class LdapConnection {
 	 *
 	 * @return LdapObject The object.
 	 */
-	public function getObjectByDN(string $dn): LdapObject {
-		return $this->getObjectByAttribute('dn', $dn, '');
+	public function getObjectByDN( string $dn ): LdapObject {
+		return $this->getObjectByAttribute( 'dn', $dn, '' );
 	}
 
 	/**
@@ -115,11 +115,11 @@ class LdapConnection {
 	 *
 	 * @return LdapObject[] The object.
 	 */
-	public function getObjectsByAttribute(string $attribute, $value, string $basedn = null): array {
+	public function getObjectsByAttribute( string $attribute, $value, string $basedn = null ): array {
 		if ( is_null( $basedn ) ) {
 			$basedn = $this->basedn;
 		}
-		$search = ldap_search( $this->ldap, $basedn, "($attribute=" . ldap_escape($value) . ')' );
+		$search = ldap_search( $this->ldap, $basedn, "($attribute=" . ldap_escape( $value ) . ')' );
 		$entries = ldap_get_entries( $this->ldap, $search );
 		unset( $entries['count'] );
 		return array_map( function( $entry ) {
@@ -136,8 +136,8 @@ class LdapConnection {
 	 *
 	 * @return LdapObject The object.
 	 */
-	public function getObjectByAttribute(string $attribute, $value, string $basedn = null): LdapObject {
-		return $this->getObjectsByAttribute($attribute, $value, $basedn)[0];
+	public function getObjectByAttribute( string $attribute, $value, string $basedn = null ): LdapObject {
+		return $this->getObjectsByAttribute( $attribute, $value, $basedn )[0];
 	}
 
 	/**
@@ -150,13 +150,13 @@ class LdapConnection {
 	 *
 	 * @return LdapObject New LDAP object.
 	 */
-	public function createObjectByDN(string $dn, $attributes = [], $noCheck = false): LdapObject {
+	public function createObjectByDN( string $dn, $attributes = [], $noCheck = false ): LdapObject {
 		if ( !$noCheck && $this->getObjectByDN( $dn ) ) {
 			throw new \DomainException( 'DN already exists' );
 		}
 		$o = new LdapObject( $this, ['distinguishedname' => $dn], true );
-		foreach($attributes as $key => $value) {
-			$o->setAttribute($key, is_string($value) ? [$value] : $value);
+		foreach( $attributes as $key => $value ) {
+			$o->setAttribute( $key, is_string( $value ) ? [$value] : $value );
 		}
 		return $o;
 	}
@@ -166,11 +166,11 @@ class LdapConnection {
 	 *
 	 * @param LdapObject $o The LDAP object to write back.
 	 */
-	public function save(LdapObject $o) {
+	public function save( LdapObject $o ) {
 		if ( $o->isNew() ) {
-			$this->saveNew($o);
+			$this->saveNew( $o );
 		} else {
-			$this->saveReplace($o);
+			$this->saveReplace( $o );
 		}
 	}
 
@@ -179,9 +179,9 @@ class LdapConnection {
 	 * This function uses the replace strategy, which means that it will
 	 * simply overwrite all attributes that have been changed.
 	 *
-	 * @param LdapObject $o The LDAP object to write back.
+	 * @param LdapObject $o The LDAP object to write back
 	 */
-	private function saveReplace(LdapObject $o) {
+	private function saveReplace( LdapObject $o ) {
 		$dn = $o->getDN();
 		ldap_modify( $this->ldap, $dn, $o->getChangedAttributes() );
 	}
@@ -192,12 +192,12 @@ class LdapConnection {
 	 * attempt to write the object as a new object.
 	 * This will probably fail if the object already exists.
 	 *
-	 * @param LdapObject $o The LDAP object to write.
+	 * @param LdapObject $o The LDAP object to write
 	 */
-	private function saveNew(LdapObject $o) {
+	private function saveNew( LdapObject $o ) {
 		$dn = $this->getDN();
 		ldap_add( $this->ldap, $dn, $o->getChangedAttributes() );
-		$o->setNew(false);
+		$o->setNew( false );
 	}
 
 }
