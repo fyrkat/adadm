@@ -18,6 +18,7 @@ namespace fyrkat\adadm\ldap;
  * @see https://php.net/ldap_connect
  * @see https://php.net/ldap_bind
  * @see https://php.net/ldap_set_option
+ * @see https://php.net/ldap_start_tls
  */
 
 class LdapConnection {
@@ -46,25 +47,29 @@ class LdapConnection {
 	 * - ldap_options: options like in `ldap_set_option` (default protocol version is set to 3)
 	 * - starttls: whether starttls should be used (default true)
 	 *
+	 * @see https://php.net/ldap_connect
+	 * @see https://php.net/ldap_bind
 	 * @see https://php.net/ldap_set_option
 	 * @see https://php.net/ldap_start_tls
 	 *
 	 * @param string $host LDAP hostname
-	 * @param string $userdn LDAP user DN
+	 * @param string $userdn LDAP user DN (AD also allows userPrincipalName here)
 	 * @param string $password LDAP password
 	 * @param string $basedn Base DN, used as default
 	 * @param array $options LDAP options
 	 */
-	public function __construct( string $host, string $userdn, string $password, string $basedn = null, array $options = [] ) {
+	public function __construct( string $host, string $userdn, string $password,
+			string $basedn = null, array $options = [] ) {
 		$options['protocol'] = $options['protocol'] ?? 'ldap';
 		$options['port'] = $options['port'] ?? (
 				$options['protocol'] === 'ldaps' ? 636 : 389
 			);
 		$options['ldap_options'] = $options['ldap_options'] ?? [];
-		$options['ldap_options'][LDAP_OPT_PROTOCOL_VERSION] = $options['ldap_options'][LDAP_OPT_PROTOCOL_VERSION] ?? 3;
+		$options['ldap_options'][LDAP_OPT_PROTOCOL_VERSION] =
+			$options['ldap_options'][LDAP_OPT_PROTOCOL_VERSION] ?? 3;
 		$options['starttls'] = $options['starttls'] ?? true;
 
-		$url = $options['protocol'] . '://' . $host;
+		$url = "$options[protocol]://$host";
 
 		$this->host = $host;
 		$this->basedn = $basedn;
@@ -85,9 +90,8 @@ class LdapConnection {
 		foreach( $options['ldap_options'] as $key => $value ) {
 			ldap_set_option( $this->ldap, $key, $value );
 		}
-		$bind = ldap_bind( $this->ldap, $userdn, $password );
 
-		if ( !$bind ) {
+		if ( false === @ldap_bind( $this->ldap, $userdn, $password ) ) {
 			throw new LdapException( $this->ldap );
 		}
 	}
@@ -113,16 +117,21 @@ class LdapConnection {
 	 *
 	 * @return LdapObject[] The object.
 	 */
-	public function getObjectsByAttribute( string $attribute, $value, string $basedn = null ): array {
+	public function getObjectsByAttribute( string $attribute, $value,
+			string $basedn = null ): array {
 		if ( is_null( $basedn ) ) {
 			$basedn = $this->basedn;
 		}
-		$search = ldap_search( $this->ldap, $basedn, "($attribute=" . ldap_escape( $value ) . ')' );
+		$search = ldap_search(
+				$this->ldap, $basedn,
+				sprintf( '(%s=%s)', $attribute, ldap_escape( $value ) )
+			);
 		$entries = ldap_get_entries( $this->ldap, $search );
 		unset( $entries['count'] );
 		return array_map( function( $entry ) {
-			return new LdapObject( $this, $entry );
-		}, $entries );	}
+				return new LdapObject( $this, $entry );
+			}, $entries );	
+	}
 
 	/**
 	 * Get a single LDAP object by the value of one attribute.
@@ -134,7 +143,8 @@ class LdapConnection {
 	 *
 	 * @return LdapObject The object.
 	 */
-	public function getObjectByAttribute( string $attribute, $value, string $basedn = null ): LdapObject {
+	public function getObjectByAttribute( string $attribute, $value,
+			string $basedn = null ): LdapObject {
 		return $this->getObjectsByAttribute( $attribute, $value, $basedn )[0];
 	}
 
@@ -148,7 +158,8 @@ class LdapConnection {
 	 *
 	 * @return LdapObject New LDAP object.
 	 */
-	public function createObjectByDN( string $dn, $attributes = [], $noCheck = false ): LdapObject {
+	public function createObjectByDN( string $dn, $attributes = [],
+			$noCheck = false ): LdapObject {
 		if ( !$noCheck && $this->getObjectByDN( $dn ) ) {
 			throw new \DomainException( 'DN already exists' );
 		}
