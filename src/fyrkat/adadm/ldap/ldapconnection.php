@@ -195,7 +195,7 @@ class LdapConnection {
 	 * @param LdapObject $o The LDAP object to write
 	 */
 	private function saveNew( LdapObject $o ) {
-		$dn = $this->getDN();
+		$dn = $o->getDN();
 		ldap_add( $this->ldap, $dn, $o->getChangedAttributes() );
 		$o->setNew( false );
 	}
