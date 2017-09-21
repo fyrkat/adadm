@@ -159,9 +159,14 @@ class LdapObject {
 		$this->attributes[strtolower( $attribute )] = array_filter(
 				$this->getAttribute( $attribute ),
 				function( $v ) use ( $value, &$found ) {
-					return $found || $v !== $value;
+					if ($found) return true; // already removed one element
+					$found = $v === $value;
+					return !$found; // keep if not found
 				}
 			);
+		if ( $found ) {
+			$this->attributeLog[strtolower( $attribute )] = strtolower( $attribute );
+		}
 		return $found;
 	}
 
