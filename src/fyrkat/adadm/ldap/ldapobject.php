@@ -111,7 +111,7 @@ class LdapObject {
 	 */
 	public function getChangedAttributes(): array {
 		return array_map( function( $a ) {
-			return $this->attributes[$a];
+			return array_values( $this->attributes[$a] );
 		}, $this->attributeLog );
 	}
 
