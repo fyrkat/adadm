@@ -95,7 +95,7 @@ class LdapObject {
 	 */
 	public function getAttribute( string $attribute ): array {
 		// PHP LDAP library converts all array keys to lowercase.
-		return $this->attributes[strtolower( $attribute )];
+		return $this->attributes[strtolower( $attribute )] ?? [];
 	}
 
 	/**
