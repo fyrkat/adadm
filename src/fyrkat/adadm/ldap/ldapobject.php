@@ -67,6 +67,8 @@ class LdapObject {
 	 * This means that it represents an LDAP object that has not been written
 	 * to the LDAP server yet.
 	 *
+	 * @see #save()
+	 *
 	 * @return bool This object is new
 	 */
 	public function isNew(): bool {
@@ -178,6 +180,18 @@ class LdapObject {
 	 */
 	public function removeAttribute( string $attribute ) {
 		$this->setAttribute( $attribute, [] );
+	}
+
+	/**
+	 * Write the local modifications back to the server.
+	 *
+	 * This function will simply call LdapConnection::save() but it may be
+	 * preferred to use this function, because it will ensure that the
+	 * connection that read this object and the connection that wrote the
+	 * object are the same.
+	 */
+	public function save() {
+		$this->ldap->save( $this );
 	}
 
 }

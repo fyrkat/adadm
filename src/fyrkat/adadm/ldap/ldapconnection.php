@@ -164,6 +164,9 @@ class LdapConnection {
 	/**
 	 * Write a modified LdapObject back to the server.
 	 *
+	 * Do not call this function directly, it should be called through
+	 * LdapObject::save()
+	 *
 	 * @param LdapObject $o The LDAP object to write back.
 	 */
 	public function save( LdapObject $o ) {
